@@ -1,4 +1,4 @@
-import { loadDemoData } from '../demo';
+import { loadDemoData, removeDemoData } from '../demo';
 import { busy, field, h, input, mount } from '../dom';
 import { diagnosticsReport } from '../diagnostics';
 import { db } from '../db';
@@ -8,6 +8,8 @@ import { t } from '../strings/de';
 import { go } from '../router';
 import type { ChildPayload, PatientPayload, VisitPayload } from '../types';
 import { changePassword } from '../vault';
+import { buildForm, type FieldDef } from '../forms';
+import { getPractice, savePractice, type Practice } from '../practice';
 
 export interface Ctx {
   onLock: () => void;
@@ -28,12 +30,6 @@ export async function homeScreen(ctx: Ctx): Promise<void> {
   patients.sort((a, b) => order[a.payload.status] - order[b.payload.status] || (a.payload.dueDate ?? '').localeCompare(b.payload.dueDate ?? ''));
 
   const msg = h('p', { class: 'notice', role: 'status' });
-  const demoBtn = h('button', { class: 'subtle' }, t.home.loadDemo) as HTMLButtonElement;
-  demoBtn.addEventListener('click', async () => {
-    const n = await busy(demoBtn, t.common.working, loadDemoData);
-    await homeScreen(ctx);
-    document.querySelector('.notice')!.textContent = t.home.demoLoaded(n);
-  });
 
   mount(
     header(ctx),
@@ -58,7 +54,6 @@ export async function homeScreen(ctx: Ctx): Promise<void> {
           ),
         ),
       ),
-      demoBtn,
     ),
   );
 }
@@ -81,7 +76,8 @@ function banners(ctx: Ctx): HTMLElement | null {
   return items.length ? h('div', {}, ...items) : null;
 }
 
-export function settingsScreen(ctx: Ctx): void {
+export async function settingsScreen(ctx: Ctx): Promise<void> {
+  const practiceEl = await practiceCard();
   const oldPw = input({ type: 'password', autocomplete: 'current-password' });
   const newPw = input({ type: 'password', autocomplete: 'new-password' });
   const pwMsg = h('p', { role: 'status' });
@@ -112,6 +108,8 @@ export function settingsScreen(ctx: Ctx): void {
       h('h1', {}, t.settings.title),
       ctx.testVault ? null : h('p', { class: 'hint' }, t.settings.autoLock),
       ctx.testVault ? null : pwForm,
+      practiceEl,
+      demoCard(),
       h('div', { class: 'card' },
         h('h2', {}, t.settings.diagnostics),
         h('p', { class: 'hint' }, t.settings.diagnosticsHint),
@@ -120,4 +118,39 @@ export function settingsScreen(ctx: Ctx): void {
       wipeForm,
     ),
   );
+}
+
+function demoCard(): HTMLElement {
+  const msg = h('p', { class: 'notice', role: 'status' });
+  const load = h('button', {}, t.home.loadDemo) as HTMLButtonElement;
+  const remove = h('button', {}, t.home.removeDemo) as HTMLButtonElement;
+  load.addEventListener('click', async () => (msg.textContent = t.home.demoLoaded(await busy(load, t.common.working, loadDemoData))));
+  remove.addEventListener('click', async () => (msg.textContent = t.home.demoRemoved(await busy(remove, t.common.working, removeDemoData))));
+  return h('div', { class: 'card' }, h('h2', {}, t.home.demoTitle), h('p', { class: 'hint' }, t.home.demoHint), h('div', { class: 'row' }, load, remove), msg);
+}
+
+async function practiceCard(): Promise<HTMLElement> {
+  const f = t.fields;
+  const p = t.practice;
+  const defs: FieldDef[] = [
+    { key: 'name', label: p.name, type: 'text' },
+    { key: 'street', label: f.street, type: 'text' },
+    { key: 'postcode', label: f.postcode, type: 'text', half: true },
+    { key: 'city', label: f.city, type: 'text', half: true },
+    { key: 'phone', label: f.phone, type: 'tel', half: true },
+    { key: 'email', label: f.email, type: 'email', half: true },
+    { key: 'ik', label: p.ik, type: 'text' },
+    { key: 'iban', label: p.iban, type: 'text', half: true },
+    { key: 'bank', label: p.bank, type: 'text', half: true },
+    { key: 'taxNote', label: p.taxNote, type: 'textarea' },
+  ];
+  const form = buildForm(defs, await getPractice());
+  const msg = h('p', { class: 'notice', role: 'status' });
+  const el = h('form', { class: 'card' }, h('h2', {}, p.title), form.el, msg, h('button', { type: 'submit' }, t.common.save));
+  el.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await savePractice(form.read() as unknown as Practice);
+    msg.textContent = p.saved;
+  });
+  return el;
 }

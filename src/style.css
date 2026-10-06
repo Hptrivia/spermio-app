@@ -136,3 +136,9 @@ input[type='date'], input[type='time'] { min-height: 48px; -webkit-appearance: n
 .preview-line { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
 .preview-line.total { font-weight: 600; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 6px; }
 .warn-text { color: var(--warn-text); }
+.inv-table { font-size: 0.92rem; }
+.inv-line { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.inv-main { display: flex; justify-content: space-between; gap: 8px; }
+.inv-total { padding-top: 8px; font-size: 1.05rem; }
+.badge.draft { background: var(--warn-bg); color: var(--warn-text); }
+.badge.paid { background: color-mix(in srgb, var(--ok) 20%, transparent); }

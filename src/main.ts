@@ -4,6 +4,7 @@ import { installErrorLog } from './diagnostics';
 import { isStandalone, requestPersistence } from './platform';
 import { currentRoute } from './router';
 import { homeScreen, settingsScreen } from './screens/home';
+import { invoiceNewScreen, invoiceScreen } from './screens/invoice';
 import { entryFormScreen, patientFormScreen, patientScreen } from './screens/patient';
 import { unlockScreen } from './screens/unlock';
 import { createTestVault, hasVault, isTestVault, isUnlocked, lock, unlockTestVault } from './vault';
@@ -27,6 +28,8 @@ async function route(): Promise<void> {
     case 'patientNew': return patientFormScreen();
     case 'patient': return patientScreen(params.pid);
     case 'patientEdit': return patientFormScreen(params.pid);
+    case 'invoiceNew': return invoiceNewScreen(params.pid);
+    case 'invoice': return invoiceScreen(params.pid, params.iid);
     case 'entryNew': return entryFormScreen(params.kind as 'visit', params.pid);
     case 'entryEdit': return entryFormScreen(params.kind as 'visit', params.pid, params.eid);
     default: return homeScreen(ctx);

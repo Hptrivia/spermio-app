@@ -7,6 +7,8 @@ const PATTERNS: [string, RegExp][] = [
   ['patientNew', /^\/p\/new$/],
   ['patient', /^\/p\/(?<pid>[\w-]+)$/],
   ['patientEdit', /^\/p\/(?<pid>[\w-]+)\/edit$/],
+  ['invoiceNew', /^\/p\/(?<pid>[\w-]+)\/invoice\/new$/],
+  ['invoice', /^\/p\/(?<pid>[\w-]+)\/invoice\/(?<iid>[\w-]+)$/],
   ['entryNew', /^\/p\/(?<pid>[\w-]+)\/(?<kind>visit|child|note)\/new$/],
   ['entryEdit', /^\/p\/(?<pid>[\w-]+)\/(?<kind>visit|child|note)\/(?<eid>[\w-]+)$/],
 ];

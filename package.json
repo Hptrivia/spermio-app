@@ -10,7 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "dexie": "^4.4.6"
+    "dexie": "^4.4.6",
+    "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",

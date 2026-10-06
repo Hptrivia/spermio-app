@@ -1,5 +1,5 @@
 import { ART_BY_LOCATION, TARIFF, gpos, materialByCode, serviceByBase, type Art } from './tariff';
-import type { VisitPayload } from './types';
+import type { ChildPayload, Entry, VisitPayload } from './types';
 
 export interface Line {
   date: string;
@@ -119,3 +119,13 @@ function line(date: string, code: string, label: string, units: number, unitPric
 }
 
 export const sumLines = (lines: Line[]) => round2(lines.reduce((s, l) => s + l.amount, 0));
+
+export const daysOld = (birthDate: string, date: string) => Math.round((Date.parse(date) - Date.parse(birthDate)) / 86_400_000);
+
+/** 301 aufsuchend: up to 120 min in the first three days of life and on the day of the first home visit. */
+export function earlyPostpartumBonus(v: VisitPayload, ownId: string | undefined, children: ChildPayload[], visits: Entry<VisitPayload>[]): boolean {
+  const birth = children.map((c) => c.birthDate).filter(Boolean).sort().pop();
+  if (birth && daysOld(birth, v.date) <= 2) return true;
+  const earlierHome = visits.some((o) => o.id !== ownId && o.payload.location === 'home' && o.payload.phase === 'postpartum' && o.payload.date < v.date);
+  return v.location === 'home' && v.phase === 'postpartum' && !earlierHome;
+}

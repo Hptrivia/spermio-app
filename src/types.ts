@@ -37,6 +37,7 @@ export interface PatientPayload {
   message: string;
   privacyConsent: boolean;
   status: 'pending' | 'active' | 'archived';
+  demo?: boolean;
 }
 
 export interface CareCasePayload {
@@ -86,15 +87,20 @@ import type { Line } from './billing';
 export type InvoiceLine = Line;
 
 export interface InvoicePayload {
+  number: string;
+  issuedAt: string;
   patientId: string;
+  /** 'mother', 'private', or 'child:<childId>' */
+  payerKey: string;
   payer: string;
+  insuredName: string;
+  insuranceNumber: string;
   from: string;
   to: string;
+  visitIds: string[];
   lines: InvoiceLine[];
-  travelCost: number;
   total: number;
   status: 'draft' | 'sent' | 'paid';
-  pdf?: { fileName: string; createdAt: string };
 }
 
 export interface NotePayload {

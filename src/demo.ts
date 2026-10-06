@@ -1,5 +1,5 @@
 import * as store from './store';
-import type { CareCasePayload, ChildPayload, InvoicePayload, PatientPayload, VisitPayload } from './types';
+import type { CareCasePayload, ChildPayload, PatientPayload, VisitPayload } from './types';
 
 // Obviously fake people. Insurance numbers use the "Z" prefix so they can't collide with real ones.
 const PEOPLE = [
@@ -10,10 +10,11 @@ const PEOPLE = [
   ['Emilia', 'Erfunden', 'Scheinweg 22', '60311', 'Frankfurt', 'statutory', 'Test-BKK'],
 ] as const;
 
+const DEMO_MESSAGE = 'Demo-Eintrag – keine echte Person.';
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const addDays = (days: number) => iso(new Date(Date.now() + days * 86_400_000));
 
-/** Creates fake patients with care cases, children, visits and invoices. Returns patient count. */
+/** Creates fake patients with care cases, children and visits. Returns patient count. */
 export async function loadDemoData(): Promise<number> {
   for (const [i, [first, last, street, postcode, city, insType, insurer]] of PEOPLE.entries()) {
     const postpartum = i < 2; // first two already gave birth
@@ -30,9 +31,10 @@ export async function loadDemoData(): Promise<number> {
       dueDate: postpartum ? addDays(-10 - i * 5) : addDays(30 + i * 20),
       services: postpartum ? ['postpartum', 'breastfeeding'] : ['pregnancy', 'birthPrep', 'postpartum'],
       preferredContact: i % 2 ? 'email' : 'phone',
-      message: 'Demo-Eintrag – keine echte Person.',
+      message: DEMO_MESSAGE,
       privacyConsent: true,
       status: i === 4 ? 'pending' : 'active',
+      demo: true,
     });
     if (i === 4) continue;
 
@@ -81,18 +83,18 @@ export async function loadDemoData(): Promise<number> {
       });
     }
 
-    if (postpartum) {
-      await store.create<InvoicePayload>('invoice', {
-        patientId: patient.id,
-        payer: insurer,
-        from: addDays(-30),
-        to: addDays(-1),
-        lines: [{ date: addDays(-7), code: '30101', label: 'Hilfeleistung im frühen Wochenbett', units: 7, unitPrice: 6.19, amount: 43.33, payer: 'mother' }],
-        travelCost: 5.82,
-        total: 49.15,
-        status: 'draft',
-      });
-    }
   }
   return PEOPLE.length;
+}
+
+
+/** Deletes the demo patients and everything attached to them. Returns how many patients were removed. */
+export async function removeDemoData(): Promise<number> {
+  const demo = (await store.list<PatientPayload>('patient')).filter((p) => p.payload.demo || p.payload.message === DEMO_MESSAGE);
+  const ids = new Set(demo.map((p) => p.id));
+  for (const type of ['visit', 'child', 'note', 'careCase', 'invoice'] as const) {
+    for (const e of await store.list<{ patientId: string }>(type)) if (ids.has(e.payload.patientId)) await store.remove(e);
+  }
+  for (const p of demo) await store.remove(p);
+  return demo.length;
 }

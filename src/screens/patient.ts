@@ -1,4 +1,4 @@
-import { euro, minutesBetween, sumLines, visitLines, type VisitContext } from '../billing';
+import { daysOld, earlyPostpartumBonus, euro, minutesBetween, sumLines, visitLines, type VisitContext } from '../billing';
 import { h, mount } from '../dom';
 import { childFields, noteFields, patientFields, patientStatusField, visitFields } from '../fields';
 import { buildForm, requiredMessage, type Form } from '../forms';
@@ -6,7 +6,7 @@ import { go } from '../router';
 import * as store from '../store';
 import { t } from '../strings/de';
 import { ART_BY_LOCATION, TARIFF, serviceByBase } from '../tariff';
-import type { ChildPayload, Entry, NotePayload, PatientPayload, VisitPayload } from '../types';
+import type { ChildPayload, Entry, InvoicePayload, NotePayload, PatientPayload, VisitPayload } from '../types';
 
 const today = () => new Date().toISOString().slice(0, 10);
 export const fmtDate = (d?: string) => (d ? new Date(d + 'T00:00').toLocaleDateString('de-DE') : '–');
@@ -16,7 +16,7 @@ function topBar(backTo: string, backLabel: string): HTMLElement {
   return h('header', { class: 'bar' }, h('button', { class: 'link', onclick: () => go(backTo) }, `← ${backLabel}`));
 }
 
-async function forPatient<P extends { patientId: string }>(type: 'visit' | 'child' | 'note', pid: string): Promise<Entry<P>[]> {
+async function forPatient<P extends { patientId: string }>(type: 'visit' | 'child' | 'note' | 'invoice', pid: string): Promise<Entry<P>[]> {
   return (await store.list<P>(type)).filter((e) => e.payload.patientId === pid);
 }
 
@@ -26,11 +26,13 @@ export async function patientScreen(pid: string): Promise<void> {
   const patient = await store.get<PatientPayload>(pid);
   if (!patient) return go('/', true);
   const p = patient.payload;
-  const [visits, children, notes] = await Promise.all([
+  const [visits, children, notes, invoices] = await Promise.all([
     forPatient<VisitPayload>('visit', pid),
     forPatient<ChildPayload>('child', pid),
     forPatient<NotePayload>('note', pid),
+    forPatient<InvoicePayload>('invoice', pid),
   ]);
+  invoices.sort((a, b) => b.payload.number.localeCompare(a.payload.number));
   const childName = new Map(children.map((c) => [c.id, c.payload.name]));
 
   type Item = { date: string; sort: string; el: HTMLElement };
@@ -75,6 +77,17 @@ export async function patientScreen(pid: string): Promise<void> {
         h('button', { onclick: () => go(`/p/${pid}/child/new`) }, t.patient.addChild),
         h('button', { onclick: () => go(`/p/${pid}/note/new`) }, t.patient.addNote),
       ),
+      h('div', { class: 'title-row' },
+        h('h2', {}, t.invoice.list),
+        h('button', { class: 'small', onclick: () => go(`/p/${pid}/invoice/new`) }, t.invoice.add),
+      ),
+      invoices.length
+        ? h('ul', { class: 'list' }, ...invoices.map((i) =>
+            h('li', { class: 'item tappable', onclick: () => go(`/p/${pid}/invoice/${i.id}`) },
+              h('div', { class: 'item-main' }, h('strong', {}, `${i.payload.number} · ${euro(i.payload.total)}`), h('span', { class: `badge ${i.payload.status}` }, t.invoice.statuses[i.payload.status])),
+              h('div', { class: 'item-sub' }, `${i.payload.payer} · ${fmtDate(i.payload.from)} – ${fmtDate(i.payload.to)}`),
+            )))
+        : null,
       h('h2', {}, t.patient.timeline),
       items.length ? h('ul', { class: 'list timeline' }, ...items.map((i) => i.el)) : h('p', { class: 'empty' }, t.patient.noEntries),
     ),
@@ -151,7 +164,7 @@ export async function entryFormScreen(kind: 'visit' | 'child' | 'note', pid: str
       materials: [],
     };
     const allVisits = await forPatient<VisitPayload>('visit', pid);
-    const ctxFor = (v: VisitPayload): VisitContext => ({ earlyBonus: earlyPostpartumBonus(v, eid, children, allVisits) });
+    const ctxFor = (v: VisitPayload): VisitContext => ({ earlyBonus: earlyPostpartumBonus(v, eid, children.map((c) => c.payload), allVisits) });
     const billing = billingPicker(initial.billingCodes ?? [], initial.materials ?? [], ctxFor);
     form = buildForm(visitFields(Object.fromEntries(children.map((c) => [c.id, c.payload.name]))), initial, () => billing.update(form.read() as unknown as VisitPayload));
     billing.update(form.read() as unknown as VisitPayload);
@@ -253,8 +266,6 @@ function billingPicker(initialCodes: string[], initialMaterials: string[], ctxFo
   return { el, update, selected: () => ({ billingCodes: [...chosen], materials: [...materials] }) };
 }
 
-const daysOld = (birthDate: string, date: string) => Math.round((Date.parse(date) - Date.parse(birthDate)) / 86_400_000);
-
 /** Pre-selects the usual service: early/late postpartum by the child's age, else what the last visit used. */
 function suggestServices(children: Entry<ChildPayload>[], last?: VisitPayload): string[] {
   const birth = children.map((c) => c.payload.birthDate).filter(Boolean).sort().pop();
@@ -265,14 +276,6 @@ function suggestServices(children: Entry<ChildPayload>[], last?: VisitPayload): 
     return ['306'];
   }
   return last?.billingCodes?.filter((c) => serviceByBase(c)) ?? [];
-}
-
-/** 301 aufsuchend: up to 120 min in the first three days of life and on the day of the first home visit. */
-function earlyPostpartumBonus(v: VisitPayload, eid: string | undefined, children: Entry<ChildPayload>[], visits: Entry<VisitPayload>[]): boolean {
-  const birth = children.map((c) => c.payload.birthDate).filter(Boolean).sort().pop();
-  if (birth && daysOld(birth, v.date) <= 2) return true;
-  const earlierHome = visits.some((o) => o.id !== eid && o.payload.location === 'home' && o.payload.phase === 'postpartum' && o.payload.date < v.date);
-  return v.location === 'home' && v.phase === 'postpartum' && !earlierHome;
 }
 
 // ---------- Shared form page ----------

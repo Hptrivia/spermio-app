@@ -12,18 +12,9 @@ export async function requestPersistence(): Promise<boolean> {
   return (await navigator.storage.persisted()) || navigator.storage.persist();
 }
 
-export function downloadText(fileName: string, text: string, type = 'text/plain'): void {
-  const url = URL.createObjectURL(new Blob([text], { type }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 /** Share sheet on iPhone (Save to Files / AirDrop / Mail), download elsewhere. */
-export async function shareOrDownload(fileName: string, text: string, type = 'text/plain'): Promise<void> {
-  const file = new File([text], fileName, { type });
+export async function shareOrDownload(fileName: string, data: string | Uint8Array<ArrayBuffer>, type = 'text/plain'): Promise<void> {
+  const file = new File([data], fileName, { type });
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file] });
@@ -32,5 +23,10 @@ export async function shareOrDownload(fileName: string, text: string, type = 'te
       if ((e as Error).name === 'AbortError') return;
     }
   }
-  downloadText(fileName, text, type);
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
