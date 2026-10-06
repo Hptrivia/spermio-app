@@ -2,7 +2,7 @@ import { loadDemoData, removeDemoData } from '../demo';
 import { busy, field, h, input, mount } from '../dom';
 import { diagnosticsReport } from '../diagnostics';
 import { db } from '../db';
-import { shareOrDownload } from '../platform';
+import { isIOS, isStandalone, shareOrDownload } from '../platform';
 import * as store from '../store';
 import { t } from '../strings/de';
 import { go } from '../router';
@@ -47,6 +47,7 @@ export async function homeScreen(ctx: Ctx): Promise<void> {
         h('button', { class: 'primary small', onclick: () => go('/p/new') }, t.patient.add),
       ),
       msg,
+      installCard(),
       inboxCard(msg, ctx),
       patients.length === 0 ? h('p', { class: 'empty' }, t.home.empty) : null,
       patients.length === 0 ? h('button', { class: 'link', onclick: () => go('/restore') }, t.backup.restoreLink) : null,
@@ -205,4 +206,35 @@ function inboxCard(msg: HTMLElement, ctx: Ctx): HTMLElement {
     })().catch(() => {});
   }
   return h('div', { class: 'card inbox' }, h('h2', {}, t.inbox.title), h('p', { class: 'hint' }, t.inbox.hint), h('div', { class: 'row' }, share, check));
+}
+
+/** Shown in the browser (not in the installed app) until installed or hidden. */
+function installCard(): HTMLElement | null {
+  let hidden = false;
+  try {
+    hidden = localStorage.getItem('installCardHidden') === '1';
+  } catch {
+    /* storage unavailable */
+  }
+  if (isStandalone() || hidden) return null;
+  const ios = isIOS();
+  const notSafari = ios && /CriOS|FxiOS|EdgiOS|GSA/.test(navigator.userAgent);
+  const card: HTMLElement = h('div', { class: 'card install' },
+    h('h2', {}, t.install.cardTitle),
+    h('p', { class: 'hint' }, t.install.intro),
+    notSafari ? h('p', { class: 'warn-text' }, t.install.iosNotSafari) : null,
+    h('ol', { class: 'steps' }, ...(ios ? t.install.iosSteps : t.install.otherSteps).map((s) => h('li', {}, s))),
+    h('button', {
+      class: 'link',
+      onclick: () => {
+        try {
+          localStorage.setItem('installCardHidden', '1');
+        } catch {
+          /* ignore */
+        }
+        card.remove();
+      },
+    }, t.install.hide),
+  );
+  return card;
 }

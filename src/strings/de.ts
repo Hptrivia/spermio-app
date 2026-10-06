@@ -13,8 +13,8 @@ export const de = {
     title: 'App zum Home-Bildschirm hinzufügen',
     intro: 'Patientendaten werden nur auf diesem Gerät gespeichert. Damit Safari sie nicht automatisch löscht, muss die App installiert sein.',
     iosSteps: [
-      'Tippe unten in Safari auf das Teilen-Symbol (Quadrat mit Pfeil).',
-      'Wähle „Zum Home-Bildschirm“.',
+      'Tippe in Safari auf das Teilen-Symbol (Quadrat mit Pfeil nach oben). Bei neueren iPhones zuerst unten rechts auf „…“ tippen, dann auf „Teilen“.',
+      'Scrolle nach unten und wähle „Zum Home-Bildschirm“, dann „Hinzufügen“.',
       'Öffne die App danach über das neue Symbol auf dem Home-Bildschirm.',
     ],
     otherSteps: [
@@ -23,6 +23,9 @@ export const de = {
       'Öffne die App danach über das neue Symbol.',
     ],
     testAnyway: 'Nur testen, ohne Installation (keine echten Daten!)',
+    cardTitle: 'App installieren',
+    iosNotSafari: 'Wichtig: Öffne diesen Link in Safari – nur Safari kann Apps zum Home-Bildschirm hinzufügen.',
+    hide: 'Ausblenden',
     notInstalledBanner: 'Testmodus im Browser – keine echten Patientendaten eingeben.',
   },
   testMode: {
