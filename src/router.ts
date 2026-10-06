@@ -4,6 +4,7 @@ export type Route = { name: string; params: Record<string, string> };
 const PATTERNS: [string, RegExp][] = [
   ['home', /^\/?$/],
   ['settings', /^\/settings$/],
+  ['restore', /^\/restore$/],
   ['patientNew', /^\/p\/new$/],
   ['patient', /^\/p\/(?<pid>[\w-]+)$/],
   ['patientEdit', /^\/p\/(?<pid>[\w-]+)\/edit$/],

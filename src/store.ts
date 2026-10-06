@@ -3,6 +3,11 @@ import { db, getMeta, setMeta, type StoredEntry } from './db';
 import type { Entry, EntryType } from './types';
 import { currentKey } from './vault';
 
+const listeners = new Set<() => void>();
+/** Called after every local change (used to schedule the automatic backup). */
+export const onChange = (fn: () => void) => listeners.add(fn);
+const changed = () => listeners.forEach((fn) => fn());
+
 // AAD binds each ciphertext to its entry, so payloads can't be swapped between entries.
 const aad = (e: Pick<StoredEntry, 'id' | 'type' | 'version'>) => `${e.id}|${e.type}|${e.version}`;
 
@@ -45,6 +50,7 @@ async function write<P>(e: Omit<Entry<P>, 'deviceId'>): Promise<Entry<P>> {
     iv: sealed.iv,
     ct: sealed.ct,
   });
+  changed();
   return full;
 }
 
@@ -79,6 +85,7 @@ export async function mergeRows(rows: StoredEntry[]): Promise<number> {
       }
     }
   });
+  if (added) changed();
   return added;
 }
 

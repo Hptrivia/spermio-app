@@ -4,6 +4,8 @@ import { installErrorLog } from './diagnostics';
 import { isStandalone, requestPersistence } from './platform';
 import { currentRoute } from './router';
 import { homeScreen, settingsScreen } from './screens/home';
+import { startAutoBackup } from './backup';
+import { restoreScreen } from './screens/backup';
 import { invoiceNewScreen, invoiceScreen } from './screens/invoice';
 import { entryFormScreen, patientFormScreen, patientScreen } from './screens/patient';
 import { unlockScreen } from './screens/unlock';
@@ -21,10 +23,13 @@ async function route(): Promise<void> {
     else return unlockScreen(() => void route());
   }
   persistDenied ??= isStandalone() && !(await requestPersistence());
+  // Re-render with synced data, but never under an open form (that would lose what's being typed).
+  startAutoBackup(() => ['home', 'patient', 'invoice'].includes(currentRoute().name) && void route());
   const ctx = { onLock: lockNow, persistDenied, testVault };
   const { name, params } = currentRoute();
   switch (name) {
     case 'settings': return settingsScreen(ctx);
+    case 'restore': return restoreScreen();
     case 'patientNew': return patientFormScreen();
     case 'patient': return patientScreen(params.pid);
     case 'patientEdit': return patientFormScreen(params.pid);

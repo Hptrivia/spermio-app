@@ -7,10 +7,15 @@ import * as store from '../store';
 import { t } from '../strings/de';
 import { go } from '../router';
 import { fetchIntake, intakeLink } from '../inbox';
+import { backupBanners, backupCard } from './backup';
 import type { ChildPayload, PatientPayload, VisitPayload } from '../types';
 import { changePassword } from '../vault';
 import { buildForm, type FieldDef } from '../forms';
 import { getPractice, savePractice, type Practice } from '../practice';
+
+// One-time message carried across the reload after a restore; shown on the home screen for this session.
+const flash = sessionStorage.getItem('restored') ?? '';
+sessionStorage.removeItem('restored');
 
 export interface Ctx {
   onLock: () => void;
@@ -30,11 +35,12 @@ export async function homeScreen(ctx: Ctx): Promise<void> {
   const order = { pending: 0, active: 1, archived: 2 };
   patients.sort((a, b) => order[a.payload.status] - order[b.payload.status] || (a.payload.dueDate ?? '').localeCompare(b.payload.dueDate ?? ''));
 
-  const msg = h('p', { class: 'notice', role: 'status' });
+  const msg = h('p', { class: 'notice', role: 'status' }, flash);
 
   mount(
     header(ctx),
     banners(ctx),
+    ...(await backupBanners()),
     h('main', {},
       h('div', { class: 'title-row' },
         h('h1', {}, t.home.patients),
@@ -43,6 +49,7 @@ export async function homeScreen(ctx: Ctx): Promise<void> {
       msg,
       inboxCard(msg, ctx),
       patients.length === 0 ? h('p', { class: 'empty' }, t.home.empty) : null,
+      patients.length === 0 ? h('button', { class: 'link', onclick: () => go('/restore') }, t.backup.restoreLink) : null,
       h('ul', { class: 'list' },
         ...patients.map((p) =>
           h('li', { class: 'item tappable', onclick: () => go(`/p/${p.id}`) },
@@ -80,6 +87,7 @@ function banners(ctx: Ctx): HTMLElement | null {
 
 export async function settingsScreen(ctx: Ctx): Promise<void> {
   const practiceEl = await practiceCard();
+  const backupEl = await backupCard();
   const oldPw = input({ type: 'password', autocomplete: 'current-password' });
   const newPw = input({ type: 'password', autocomplete: 'new-password' });
   const pwMsg = h('p', { role: 'status' });
@@ -110,6 +118,7 @@ export async function settingsScreen(ctx: Ctx): Promise<void> {
       h('h1', {}, t.settings.title),
       ctx.testVault ? null : h('p', { class: 'hint' }, t.settings.autoLock),
       ctx.testVault ? null : pwForm,
+      backupEl,
       practiceEl,
       demoCard(),
       h('div', { class: 'card' },

@@ -145,3 +145,5 @@ input[type='date'], input[type='time'] { min-height: 48px; -webkit-appearance: n
 .card.pending { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
 .privacy { margin: 12px 0; }
 .privacy summary { cursor: pointer; color: var(--accent); }
+.banner.danger { background: color-mix(in srgb, var(--danger) 18%, var(--surface)); color: var(--danger); font-weight: 600; }
+button.link.inline { display: inline; margin: 0; padding: 0; min-height: 0; text-decoration: underline; }
