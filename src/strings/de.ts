@@ -25,6 +25,9 @@ export const de = {
     testAnyway: 'Nur testen, ohne Installation (keine echten Daten!)',
     notInstalledBanner: 'Testmodus im Browser – keine echten Patientendaten eingeben.',
   },
+  testMode: {
+    banner: 'Testversion – ohne Passwort. Nur Testdaten eingeben, keine echten Patientinnen.',
+  },
   setup: {
     title: 'Willkommen',
     intro: 'Lege ein App-Passwort fest. Es schützt alle Daten auf diesem Gerät.',

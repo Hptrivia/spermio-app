@@ -3,29 +3,22 @@ import { startAutoLock } from './autolock';
 import { installErrorLog } from './diagnostics';
 import { isStandalone, requestPersistence } from './platform';
 import { homeScreen } from './screens/home';
-import { installScreen, setupScreen } from './screens/onboarding';
 import { unlockScreen } from './screens/unlock';
-import { hasVault, isUnlocked, lock } from './vault';
+import { createTestVault, hasVault, isTestVault, isUnlocked, lock, unlockTestVault } from './vault';
 
 let persistDenied = false;
 
-// Browser test mode: lets you try the app without installing it. Only a flag, no data.
-const TEST_MODE = 'testMode';
-const testMode = () => sessionStorage.getItem(TEST_MODE) === '1';
-
+// Test phase: no password, no recovery code, no install requirement.
+// The real onboarding (screens/onboarding.ts) comes back before real patient data.
 async function route(): Promise<void> {
-  if (!(await hasVault())) {
-    if (!isStandalone() && !testMode()) {
-      return installScreen(() => {
-        sessionStorage.setItem(TEST_MODE, '1');
-        void route();
-      });
-    }
-    return setupScreen(() => void route());
+  if (!(await hasVault())) await createTestVault();
+  const testVault = await isTestVault();
+  if (!isUnlocked()) {
+    if (testVault) await unlockTestVault();
+    else return unlockScreen(() => void route());
   }
-  if (!isUnlocked()) return unlockScreen(() => void route());
-  persistDenied = !(await requestPersistence());
-  await homeScreen({ onLock: lockNow, persistDenied });
+  persistDenied = isStandalone() && !(await requestPersistence());
+  await homeScreen({ onLock: lockNow, persistDenied, testVault });
 }
 
 function lockNow(): void {
@@ -34,7 +27,7 @@ function lockNow(): void {
 }
 
 installErrorLog();
-startAutoLock(() => void route());
+void isTestVault().then((test) => test || startAutoLock(() => void route()));
 void route();
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

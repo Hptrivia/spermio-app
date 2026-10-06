@@ -2,7 +2,7 @@ import { loadDemoData } from '../demo';
 import { busy, field, h, input, mount } from '../dom';
 import { diagnosticsReport } from '../diagnostics';
 import { db } from '../db';
-import { isStandalone, shareOrDownload } from '../platform';
+import { shareOrDownload } from '../platform';
 import * as store from '../store';
 import { t } from '../strings/de';
 import type { ChildPayload, PatientPayload, VisitPayload } from '../types';
@@ -11,6 +11,7 @@ import { changePassword } from '../vault';
 interface Ctx {
   onLock: () => void;
   persistDenied: boolean;
+  testVault: boolean;
 }
 
 const fmtDate = (d: string) => new Date(d + 'T00:00').toLocaleDateString('de-DE');
@@ -62,15 +63,15 @@ function header(ctx: Ctx): HTMLElement {
     h('span', { class: 'brand' }, t.appName),
     h('div', {},
       h('button', { class: 'ghost', onclick: () => settingsScreen(ctx) }, '⚙︎'),
-      h('button', { class: 'ghost', onclick: ctx.onLock }, t.common.lock),
+      ctx.testVault ? null : h('button', { class: 'ghost', onclick: ctx.onLock }, t.common.lock),
     ),
   );
 }
 
 function banners(ctx: Ctx): HTMLElement | null {
   const items = [
-    !isStandalone() ? h('div', { class: 'banner warn' }, t.install.notInstalledBanner) : null,
-    isStandalone() && ctx.persistDenied ? h('div', { class: 'banner warn' }, t.persist.denied) : null,
+    ctx.testVault ? h('div', { class: 'banner warn' }, t.testMode.banner) : null,
+    ctx.persistDenied ? h('div', { class: 'banner warn' }, t.persist.denied) : null,
   ].filter(Boolean) as HTMLElement[];
   return items.length ? h('div', {}, ...items) : null;
 }
@@ -104,8 +105,8 @@ function settingsScreen(ctx: Ctx): void {
     h('main', {},
       h('button', { class: 'link', onclick: () => homeScreen(ctx) }, `← ${t.common.back}`),
       h('h1', {}, t.settings.title),
-      h('p', { class: 'hint' }, t.settings.autoLock),
-      pwForm,
+      ctx.testVault ? null : h('p', { class: 'hint' }, t.settings.autoLock),
+      ctx.testVault ? null : pwForm,
       h('div', { class: 'card' },
         h('h2', {}, t.settings.diagnostics),
         h('p', { class: 'hint' }, t.settings.diagnosticsHint),

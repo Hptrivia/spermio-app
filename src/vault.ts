@@ -27,6 +27,15 @@ interface VaultRecord {
 }
 
 const VAULT = 'vault';
+const TEST_VAULT = 'testVault';
+
+/**
+ * Test phase: the vault is created and unlocked with a fixed built-in password,
+ * so nobody has to type passwords or save a recovery code while trying the app.
+ * Data is still encrypted the same way. Before real patient data, this gets
+ * replaced by the real password + recovery code setup.
+ */
+const TEST_PASSWORD = 'spermio-test-vault-not-secret';
 let sessionKey: CryptoKey | null = null;
 
 export async function hasVault(): Promise<boolean> {
@@ -75,6 +84,20 @@ export async function createVault(password: string): Promise<string> {
   const { recoveryCode, commit } = await prepareVault(password);
   await commit();
   return recoveryCode;
+}
+
+export async function isTestVault(): Promise<boolean> {
+  return (await getMeta<boolean>(TEST_VAULT)) === true;
+}
+
+export async function createTestVault(): Promise<void> {
+  const { commit } = await prepareVault(TEST_PASSWORD);
+  await commit();
+  await setMeta(TEST_VAULT, true);
+}
+
+export function unlockTestVault(): Promise<boolean> {
+  return unlockWithPassword(TEST_PASSWORD);
 }
 
 /** Returns false on a wrong password. */
