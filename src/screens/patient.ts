@@ -61,6 +61,7 @@ export async function patientScreen(pid: string): Promise<void> {
         h('h1', {}, fullName(p)),
         h('span', { class: `badge ${p.status}` }, t.options.status[p.status]),
       ),
+      p.status === 'pending' ? pendingCard(patient) : null,
       h('div', { class: 'card info' },
         info(t.fields.dueDate, p.dueDate && fmtDate(p.dueDate)),
         info(t.fields.dateOfBirth, p.dateOfBirth && fmtDate(p.dateOfBirth)),
@@ -111,6 +112,17 @@ function visitItem(pid: string, v: Entry<VisitPayload>, childName: Map<string, s
     x.notes,
   ].filter(Boolean).join('\n');
   return timelineItem(`/p/${pid}/visit/${v.id}`, 'visit', `${t.patient.visit} · ${t.options.phase[x.phase]}`, x.date, sub);
+}
+
+function pendingCard(patient: Entry<PatientPayload>): HTMLElement {
+  return h('div', { class: 'card pending' },
+    h('h2', {}, t.inbox.pendingTitle),
+    h('p', { class: 'hint' }, `${t.inbox.pendingHint}${patient.payload.intakeReceivedAt ? ` (${new Date(patient.payload.intakeReceivedAt).toLocaleString('de-DE')})` : ''}`),
+    h('div', { class: 'row' },
+      h('button', { class: 'primary small', onclick: async () => { await store.update(patient, { ...patient.payload, status: 'active' }); void patientScreen(patient.id); } }, t.inbox.accept),
+      h('button', { class: 'danger', onclick: async () => { if (!confirm(t.inbox.rejectConfirm)) return; await store.remove(patient); go('/', true); } }, t.inbox.reject),
+    ),
+  );
 }
 
 // ---------- Patient create / edit ----------

@@ -38,6 +38,8 @@ export interface PatientPayload {
   privacyConsent: boolean;
   status: 'pending' | 'active' | 'archived';
   demo?: boolean;
+  /** Set when the patient sent the online form herself. */
+  intakeReceivedAt?: string;
 }
 
 export interface CareCasePayload {

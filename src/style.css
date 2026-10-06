@@ -142,3 +142,6 @@ input[type='date'], input[type='time'] { min-height: 48px; -webkit-appearance: n
 .inv-total { padding-top: 8px; font-size: 1.05rem; }
 .badge.draft { background: var(--warn-bg); color: var(--warn-text); }
 .badge.paid { background: color-mix(in srgb, var(--ok) 20%, transparent); }
+.card.pending { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.privacy { margin: 12px 0; }
+.privacy summary { cursor: pointer; color: var(--accent); }

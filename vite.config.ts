@@ -25,6 +25,7 @@ const cspPlugin = (): Plugin => ({
 export default defineConfig({
   base: '/spermio-app/',
   plugins: [cspPlugin()],
+  build: { rollupOptions: { input: { main: 'index.html', intake: 'intake.html' } } },
   define: { __APP_VERSION__: JSON.stringify(process.env.npm_package_version) },
   test: { environment: 'node', setupFiles: ['fake-indexeddb/auto'] },
 });

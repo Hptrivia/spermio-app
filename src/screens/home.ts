@@ -6,6 +6,7 @@ import { shareOrDownload } from '../platform';
 import * as store from '../store';
 import { t } from '../strings/de';
 import { go } from '../router';
+import { fetchIntake, intakeLink } from '../inbox';
 import type { ChildPayload, PatientPayload, VisitPayload } from '../types';
 import { changePassword } from '../vault';
 import { buildForm, type FieldDef } from '../forms';
@@ -40,6 +41,7 @@ export async function homeScreen(ctx: Ctx): Promise<void> {
         h('button', { class: 'primary small', onclick: () => go('/p/new') }, t.patient.add),
       ),
       msg,
+      inboxCard(msg, ctx),
       patients.length === 0 ? h('p', { class: 'empty' }, t.home.empty) : null,
       h('ul', { class: 'list' },
         ...patients.map((p) =>
@@ -153,4 +155,45 @@ async function practiceCard(): Promise<HTMLElement> {
     msg.textContent = p.saved;
   });
   return el;
+}
+
+let autoFetched = false;
+
+function inboxCard(msg: HTMLElement, ctx: Ctx): HTMLElement {
+  const share = h('button', {}, t.inbox.share) as HTMLButtonElement;
+  const check = h('button', {}, t.inbox.check) as HTMLButtonElement;
+  share.addEventListener('click', async () => {
+    const link = await busy(share, t.common.working, intakeLink);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: t.intake.title, url: link });
+        return;
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return;
+      }
+    }
+    await navigator.clipboard.writeText(link);
+    msg.textContent = t.inbox.copied;
+  });
+  const pull = async () => {
+    try {
+      const n = await fetchIntake();
+      if (n > 0) await homeScreen(ctx);
+      document.querySelector('.notice')!.textContent = t.inbox.imported(n);
+    } catch {
+      document.querySelector('.notice')!.textContent = t.inbox.offline;
+    }
+  };
+  check.addEventListener('click', () => busy(check, t.common.working, pull));
+  // Check once automatically when the app opens.
+  if (!autoFetched) {
+    autoFetched = true;
+    void (async () => {
+      const n = await fetchIntake();
+      if (n === 0) return;
+      await homeScreen(ctx);
+      document.querySelector('.notice')!.textContent = t.inbox.imported(n);
+    })().catch(() => {});
+  }
+  return h('div', { class: 'card inbox' }, h('h2', {}, t.inbox.title), h('p', { class: 'hint' }, t.inbox.hint), h('div', { class: 'row' }, share, check));
 }
