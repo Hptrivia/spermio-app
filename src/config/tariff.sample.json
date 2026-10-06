@@ -1,0 +1,15 @@
+{
+  "_notice": "SAMPLE – NOT OFFICIAL. Placeholder prices and codes for testing only. Replace with the real Hebammenhilfevertrag values before any real billing.",
+  "currency": "EUR",
+  "travelPerKm": 0.7,
+  "positions": [
+    { "code": "S-VS", "label": "Vorsorgeuntersuchung (Beispiel)", "unitMinutes": 5, "pricePerUnit": 6.0, "maxUnitsPerContact": 12, "maxUnitsPerDay": 12, "payer": "mother", "phases": ["pregnancy"] },
+    { "code": "S-HB", "label": "Hilfe bei Beschwerden (Beispiel)", "unitMinutes": 5, "pricePerUnit": 5.5, "maxUnitsPerContact": 10, "maxUnitsPerDay": 20, "payer": "mother", "phases": ["pregnancy"] },
+    { "code": "S-GV", "label": "Geburtsvorbereitung Einzel (Beispiel)", "unitMinutes": 5, "pricePerUnit": 5.0, "maxUnitsPerContact": 12, "maxUnitsPerDay": 12, "payer": "mother", "phases": ["pregnancy"] },
+    { "code": "S-WB", "label": "Wochenbettbesuch Mutter (Beispiel)", "unitMinutes": 5, "pricePerUnit": 6.0, "maxUnitsPerContact": 8, "maxUnitsPerDay": 16, "payer": "mother", "phases": ["postpartum"] },
+    { "code": "S-WK", "label": "Wochenbettbesuch Kind (Beispiel)", "unitMinutes": 5, "pricePerUnit": 6.0, "maxUnitsPerContact": 6, "maxUnitsPerDay": 12, "payer": "child", "phases": ["postpartum"] },
+    { "code": "S-ST", "label": "Stillberatung (Beispiel)", "unitMinutes": 5, "pricePerUnit": 5.5, "maxUnitsPerContact": 8, "maxUnitsPerDay": 8, "payer": "mother", "phases": ["postpartum"] },
+    { "code": "S-TEL", "label": "Telefonische Beratung (Beispiel)", "unitMinutes": 5, "pricePerUnit": 4.0, "maxUnitsPerContact": 4, "maxUnitsPerDay": 4, "payer": "mother", "phases": ["pregnancy", "postpartum"] },
+    { "code": "S-GB", "label": "Geburtshilfe (Beispiel)", "unitMinutes": 5, "pricePerUnit": 8.0, "maxUnitsPerContact": 60, "maxUnitsPerDay": 60, "payer": "mother", "phases": ["birth"] }
+  ]
+}

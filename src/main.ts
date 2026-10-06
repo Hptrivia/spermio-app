@@ -2,11 +2,13 @@ import './style.css';
 import { startAutoLock } from './autolock';
 import { installErrorLog } from './diagnostics';
 import { isStandalone, requestPersistence } from './platform';
-import { homeScreen } from './screens/home';
+import { currentRoute } from './router';
+import { homeScreen, settingsScreen } from './screens/home';
+import { entryFormScreen, patientFormScreen, patientScreen } from './screens/patient';
 import { unlockScreen } from './screens/unlock';
 import { createTestVault, hasVault, isTestVault, isUnlocked, lock, unlockTestVault } from './vault';
 
-let persistDenied = false;
+let persistDenied: boolean | undefined;
 
 // Test phase: no password, no recovery code, no install requirement.
 // The real onboarding (screens/onboarding.ts) comes back before real patient data.
@@ -17,9 +19,21 @@ async function route(): Promise<void> {
     if (testVault) await unlockTestVault();
     else return unlockScreen(() => void route());
   }
-  persistDenied = isStandalone() && !(await requestPersistence());
-  await homeScreen({ onLock: lockNow, persistDenied, testVault });
+  persistDenied ??= isStandalone() && !(await requestPersistence());
+  const ctx = { onLock: lockNow, persistDenied, testVault };
+  const { name, params } = currentRoute();
+  switch (name) {
+    case 'settings': return settingsScreen(ctx);
+    case 'patientNew': return patientFormScreen();
+    case 'patient': return patientScreen(params.pid);
+    case 'patientEdit': return patientFormScreen(params.pid);
+    case 'entryNew': return entryFormScreen(params.kind as 'visit', params.pid);
+    case 'entryEdit': return entryFormScreen(params.kind as 'visit', params.pid, params.eid);
+    default: return homeScreen(ctx);
+  }
 }
+
+window.addEventListener('hashchange', () => void route());
 
 function lockNow(): void {
   lock();

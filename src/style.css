@@ -43,7 +43,7 @@ p { margin: 0 0 0.75rem; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
 .field { display: block; margin-bottom: 12px; }
 .field span { display: block; font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
-input:not([type='checkbox']) {
+input:not([type='checkbox']):not([type='radio']) {
   width: 100%; font: inherit; padding: 12px; border-radius: 10px;
   border: 1px solid var(--line); background: var(--bg); color: var(--text);
 }
@@ -87,3 +87,47 @@ button.ghost { border: none; background: none; }
   .code, .code * { visibility: visible; }
   .code { position: absolute; top: 0; left: 0; right: 0; }
 }
+
+/* --- Patient file & forms --- */
+.title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.title-row h1 { margin-bottom: 0.5rem; }
+button.small { width: auto; min-height: 40px; padding: 8px 14px; }
+button.subtle { color: var(--muted); }
+.tappable { cursor: pointer; }
+.tappable:active { background: var(--bg); }
+.item .date { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+.clamp { white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.kind-visit { border-left: 4px solid var(--accent); }
+.kind-child { border-left: 4px solid var(--ok); }
+.kind-note { border-left: 4px solid var(--muted); }
+.info .info-row { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 0.95rem; }
+.info .info-row span:first-child { color: var(--muted); }
+.info .info-row span:last-child { text-align: right; }
+.quote { margin-top: 8px; font-style: italic; }
+.actions { margin: 8px 0 16px; }
+.actions button { flex: 1; }
+.actions .primary { width: auto; }
+.form h2.section { font-size: 1rem; color: var(--accent); margin: 18px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.form h2.section:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+.field .label { display: block; font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
+.field[hidden] { display: none; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+textarea, select {
+  width: 100%; font: inherit; padding: 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--text);
+}
+select { appearance: none; }
+input[type='date'], input[type='time'] { min-height: 48px; -webkit-appearance: none; }
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--bg); cursor: pointer; font-size: 0.95rem; }
+.chip input { margin: 0; accent-color: var(--accent); }
+.chip:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.positions { display: flex; flex-direction: column; gap: 6px; }
+.position { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.position:has(input:checked) { border-color: var(--accent); }
+.position input { width: 20px; height: 20px; accent-color: var(--accent); }
+.pos-amount { grid-column: 2; color: var(--muted); font-size: 0.85rem; }
+.sample { display: block; font-weight: 400; color: var(--muted); font-size: 0.8rem; }
+.total { font-weight: 600; margin-top: 10px; }
+.danger-link { color: var(--danger) !important; display: block; margin: 12px auto 0; }
+.actions button { white-space: nowrap; padding-left: 10px; padding-right: 10px; }

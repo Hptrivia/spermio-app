@@ -54,8 +54,8 @@ export async function loadDemoData(): Promise<number> {
         lengthCm: 51 - i,
         headCircumferenceCm: 35,
         apgar: { min1: 8, min5: 9, min10: 10 },
-        birthMode: i === 0 ? 'spontan' : 'Sectio',
-        placeOfBirth: 'Klinik',
+        birthMode: i === 0 ? 'spontan' : 'sectio',
+        placeOfBirth: 'clinic',
         insurerName: insurer,
         insuranceNumber: `Z10000000${i}`,
       });
@@ -74,8 +74,8 @@ export async function loadDemoData(): Promise<number> {
         phase: postpartum ? 'postpartum' : 'pregnancy',
         motherVitals: { bp: '118/76', pulse: 72, tempC: 36.8 },
         childVitals: postpartum ? { weightG: 3350 + v * 40, feeding: 'gestillt' } : undefined,
-        notes: 'Demo-Besuch.',
-        billingCodes: postpartum ? ['DEMO-WB'] : ['DEMO-VS'],
+        notes: ['Demo-Besuch. Alles unauffällig.', 'Demo-Besuch. Fragen zur Ernährung besprochen.', 'Demo: telefonische Rückfrage.'][v],
+        billingCodes: postpartum ? (v === 2 ? ['S-TEL'] : ['S-WB', 'S-WK']) : v === 2 ? ['S-TEL'] : ['S-VS'],
         travelKm: v === 2 ? 0 : 6 + i,
       });
     }
@@ -86,7 +86,7 @@ export async function loadDemoData(): Promise<number> {
         payer: insurer,
         from: addDays(-30),
         to: addDays(-1),
-        lines: [{ date: addDays(-7), code: 'DEMO-WB', label: 'Wochenbettbesuch (Beispiel)', units: 7, amount: 42 }],
+        lines: [{ date: addDays(-7), code: 'S-WB', label: 'Wochenbettbesuch Mutter (Beispiel)', units: 7, amount: 42 }],
         travelCost: 4.2,
         total: 46.2,
         status: 'draft',

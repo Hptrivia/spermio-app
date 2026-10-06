@@ -63,7 +63,7 @@ export async function get<P>(id: string): Promise<Entry<P> | undefined> {
 
 export async function counts(): Promise<Record<EntryType, number>> {
   const rows = latestById(await db.entries.toArray()).filter((r) => !r.deleted);
-  const out = { patient: 0, careCase: 0, child: 0, visit: 0, invoice: 0 };
+  const out = { patient: 0, careCase: 0, child: 0, visit: 0, invoice: 0, note: 0 };
   for (const r of rows) out[r.type]++;
   return out;
 }

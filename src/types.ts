@@ -2,7 +2,7 @@
 // Edits add a new version; deletes add a tombstone version. Merging two devices
 // is a union by (id, version), and the current state is the highest version per id.
 
-export type EntryType = 'patient' | 'careCase' | 'child' | 'visit' | 'invoice';
+export type EntryType = 'patient' | 'careCase' | 'child' | 'visit' | 'invoice' | 'note';
 
 export interface Entry<P = unknown> {
   id: string;
@@ -96,4 +96,10 @@ export interface InvoicePayload {
   total: number;
   status: 'draft' | 'sent' | 'paid';
   pdf?: { fileName: string; createdAt: string };
+}
+
+export interface NotePayload {
+  patientId: string;
+  date: string;
+  text: string;
 }
