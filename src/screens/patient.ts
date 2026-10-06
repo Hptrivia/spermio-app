@@ -1,11 +1,11 @@
-import { euro, minutesBetween, travelCost, unitsForContact } from '../billing';
+import { euro, minutesBetween, sumLines, visitLines, type VisitContext } from '../billing';
 import { h, mount } from '../dom';
 import { childFields, noteFields, patientFields, patientStatusField, visitFields } from '../fields';
 import { buildForm, requiredMessage, type Form } from '../forms';
 import { go } from '../router';
 import * as store from '../store';
 import { t } from '../strings/de';
-import { TARIFF, positionByCode, type Phase } from '../tariff';
+import { ART_BY_LOCATION, TARIFF, serviceByBase } from '../tariff';
 import type { ChildPayload, Entry, NotePayload, PatientPayload, VisitPayload } from '../types';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -147,14 +147,17 @@ export async function entryFormScreen(kind: 'visit' | 'child' | 'note', pid: str
       seen: children.length ? 'both' : 'mother',
       childId: children[0]?.id,
       travelKm: lastVisit?.payload.travelKm,
-      billingCodes: [],
+      billingCodes: suggestServices(children, lastVisit?.payload),
+      materials: [],
     };
-    const billing = billingPicker(initial.billingCodes ?? []);
+    const allVisits = await forPatient<VisitPayload>('visit', pid);
+    const ctxFor = (v: VisitPayload): VisitContext => ({ earlyBonus: earlyPostpartumBonus(v, eid, children, allVisits) });
+    const billing = billingPicker(initial.billingCodes ?? [], initial.materials ?? [], ctxFor);
     form = buildForm(visitFields(Object.fromEntries(children.map((c) => [c.id, c.payload.name]))), initial, () => billing.update(form.read() as unknown as VisitPayload));
     billing.update(form.read() as unknown as VisitPayload);
     extra = billing.el;
     const read = form.read;
-    form.read = () => ({ ...read(), billingCodes: billing.selected() });
+    form.read = () => ({ ...read(), ...billing.selected() });
   } else {
     const initial = existing?.payload ?? (kind === 'child' ? { birthDate: today(), insurerName: patient.payload.insurerName } : { date: today() });
     form = buildForm(kind === 'child' ? childFields : noteFields, initial);
@@ -186,56 +189,90 @@ export async function entryFormScreen(kind: 'visit' | 'child' | 'note', pid: str
   });
 }
 
-/** Billing positions for the visit's phase, with live unit + amount preview. */
-function billingPicker(initial: string[]) {
-  const chosen = new Set(initial);
-  const box = h('div', { class: 'positions' });
-  const total = h('p', { class: 'total' });
-  const el = h('div', {}, h('h2', { class: 'section' }, t.visit.billing, h('small', { class: 'sample' }, t.visit.sampleTariff)), box, total);
+/** Services and materials for the visit's phase, with a live preview of the fee positions and amounts. */
+function billingPicker(initialCodes: string[], initialMaterials: string[], ctxFor: (v: VisitPayload) => VisitContext) {
+  const chosen = new Set(initialCodes);
+  const materials = new Set(initialMaterials);
+  const servicesBox = h('div', { class: 'positions' });
+  const materialsBox = h('div', { class: 'positions' });
+  const preview = h('div', { class: 'preview' });
+  const el = h('div', {},
+    h('h2', { class: 'section' }, t.visit.billing, h('small', { class: 'sample' }, t.visit.tariffNote)),
+    servicesBox,
+    h('h2', { class: 'section' }, t.visit.materials),
+    materialsBox,
+    preview,
+  );
   let current: VisitPayload | undefined;
+  let renderedFor = '';
 
-  const renderTotal = () => {
-    const v = current!;
-    const mins = minutesBetween(v.startTime, v.endTime);
-    const sum = [...chosen].reduce((acc, code) => {
-      const p = positionByCode(code);
-      return p ? acc + unitsForContact(mins, p) * p.pricePerUnit : acc;
-    }, 0);
-    const km = v.location === 'home' ? (v.travelKm ?? 0) : 0;
-    total.textContent = mins > 0 ? `${t.visit.duration}: ${mins} ${t.patient.minutes} · ${euro(sum)}${km ? ` + ${euro(travelCost(km))} (${km} ${t.patient.km})` : ''}` : '';
+  const renderPreview = () => {
+    const v = { ...current!, billingCodes: [...chosen], materials: [...materials] };
+    const { lines, warnings } = visitLines(v, ctxFor(v));
+    preview.replaceChildren(
+      ...lines.map((l) => h('div', { class: 'preview-line' }, h('span', {}, `${l.code} · ${l.units} × ${euro(l.unitPrice)}`), h('span', {}, euro(l.amount)))),
+      ...(lines.length ? [h('div', { class: 'preview-line total' }, h('span', {}, `${t.visit.duration}: ${minutesBetween(v.startTime, v.endTime)} ${t.patient.minutes}`), h('span', {}, euro(sumLines(lines))))] : []),
+      ...warnings.map((w) => h('p', { class: 'hint warn-text' }, w)),
+    );
   };
 
-  // Re-rendered when the visit's phase or times change; ticking a box only updates the total.
-  let renderedFor = '';
+  const toggle = (set: Set<string>, code: string, on: boolean) => {
+    if (on) set.add(code);
+    else set.delete(code);
+    renderPreview();
+  };
+
+  // Rebuilt only when phase or contact type changes, so a tap right after leaving a text field isn't swallowed.
   const update = (v: VisitPayload) => {
     current = v;
-    const mins = minutesBetween(v.startTime, v.endTime);
-    // Only rebuild when it matters, so a tap that follows leaving a text field isn't swallowed.
-    const key = `${v.phase}|${mins}`;
-    if (key === renderedFor) return renderTotal();
-    renderedFor = key;
-    const positions = TARIFF.positions.filter((p) => p.phases.includes(v.phase as Phase) || chosen.has(p.code));
-    box.replaceChildren(
-      ...(positions.length
-        ? positions.map((p) => {
-            const units = unitsForContact(mins, p);
-            const cb = h('input', { type: 'checkbox', checked: chosen.has(p.code) }) as HTMLInputElement;
-            cb.addEventListener('change', () => {
-              if (cb.checked) chosen.add(p.code);
-              else chosen.delete(p.code);
-              renderTotal();
-            });
-            return h('label', { class: 'position' },
-              cb,
-              h('span', { class: 'pos-label' }, h('strong', {}, p.code), ' ', p.label),
-              mins > 0 ? h('span', { class: 'pos-amount' }, `${units} × ${euro(p.pricePerUnit)} = ${euro(units * p.pricePerUnit)}`) : null,
-            );
-          })
-        : [h('p', { class: 'hint' }, t.visit.noPositions)]),
-    );
-    renderTotal();
+    const key = `${v.phase}|${v.location}`;
+    if (key !== renderedFor) {
+      renderedFor = key;
+      const art = ART_BY_LOCATION[v.location];
+      servicesBox.replaceChildren(
+        ...TARIFF.services.filter((s) => s.phase === v.phase || chosen.has(s.base)).map((s) => {
+          const allowed = !!s.arts[art];
+          const cb = h('input', { type: 'checkbox', checked: chosen.has(s.base) }) as HTMLInputElement;
+          cb.addEventListener('change', () => toggle(chosen, s.base, cb.checked));
+          return h('label', { class: `position${allowed ? '' : ' muted'}` }, cb,
+            h('span', { class: 'pos-label' }, h('strong', {}, `${s.base}..`), ' ', s.label, s.payer === 'child' ? ` (${t.fields.childInsurer})` : ''),
+            allowed ? null : h('span', { class: 'pos-amount' }, t.visit.notForArt),
+          );
+        }),
+      );
+      materialsBox.replaceChildren(
+        ...TARIFF.materials.filter((m) => m.phase === v.phase || materials.has(m.code)).map((m) => {
+          const cb = h('input', { type: 'checkbox', checked: materials.has(m.code) }) as HTMLInputElement;
+          cb.addEventListener('change', () => toggle(materials, m.code, cb.checked));
+          return h('label', { class: 'position' }, cb, h('span', { class: 'pos-label' }, h('strong', {}, m.code), ' ', m.label), h('span', { class: 'pos-amount' }, euro(m.price)));
+        }),
+      );
+    }
+    renderPreview();
   };
-  return { el, update, selected: () => [...chosen] };
+  return { el, update, selected: () => ({ billingCodes: [...chosen], materials: [...materials] }) };
+}
+
+const daysOld = (birthDate: string, date: string) => Math.round((Date.parse(date) - Date.parse(birthDate)) / 86_400_000);
+
+/** Pre-selects the usual service: early/late postpartum by the child's age, else what the last visit used. */
+function suggestServices(children: Entry<ChildPayload>[], last?: VisitPayload): string[] {
+  const birth = children.map((c) => c.payload.birthDate).filter(Boolean).sort().pop();
+  if (birth) {
+    const age = daysOld(birth, today());
+    if (age <= 10) return ['301'];
+    if (age <= 84) return ['303'];
+    return ['306'];
+  }
+  return last?.billingCodes?.filter((c) => serviceByBase(c)) ?? [];
+}
+
+/** 301 aufsuchend: up to 120 min in the first three days of life and on the day of the first home visit. */
+function earlyPostpartumBonus(v: VisitPayload, eid: string | undefined, children: Entry<ChildPayload>[], visits: Entry<VisitPayload>[]): boolean {
+  const birth = children.map((c) => c.payload.birthDate).filter(Boolean).sort().pop();
+  if (birth && daysOld(birth, v.date) <= 2) return true;
+  const earlierHome = visits.some((o) => o.id !== eid && o.payload.location === 'home' && o.payload.phase === 'postpartum' && o.payload.date < v.date);
+  return v.location === 'home' && v.phase === 'postpartum' && !earlierHome;
 }
 
 // ---------- Shared form page ----------

@@ -74,17 +74,16 @@ export interface VisitPayload {
   motherVitals?: { bp?: string; pulse?: number; tempC?: number; weightKg?: number };
   childVitals?: { weightG?: number; tempC?: number; feeding?: string; notes?: string };
   notes: string;
+  /** Service bases from the tariff, e.g. "101" or "301". The full fee position is derived at billing time. */
   billingCodes: string[];
+  materials?: string[];
   travelKm: number;
+  /** Trip shared with other patients → "anteiliges Wegegeld". */
+  travelShared?: boolean;
 }
 
-export interface InvoiceLine {
-  date: string;
-  code: string;
-  label: string;
-  units: number;
-  amount: number;
-}
+import type { Line } from './billing';
+export type InvoiceLine = Line;
 
 export interface InvoicePayload {
   patientId: string;

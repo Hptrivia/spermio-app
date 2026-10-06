@@ -10,7 +10,7 @@ export type FieldDef =
   | {
       key: string;
       label: string;
-      type: 'text' | 'email' | 'tel' | 'date' | 'time' | 'number' | 'textarea' | 'select' | 'radio' | 'checks';
+      type: 'text' | 'email' | 'tel' | 'date' | 'time' | 'number' | 'textarea' | 'select' | 'radio' | 'checks' | 'checkbox';
       options?: Opts;
       required?: boolean;
       step?: string;
@@ -126,6 +126,10 @@ function makeControl(def: Extract<FieldDef, { key: string }>, value: unknown): {
         box.append(h('label', { class: 'chip' }, inp, h('span', {}, l)));
       }
       return { control: box, read: () => [...box.querySelectorAll<HTMLInputElement>('input:checked')].map((i) => i.value) };
+    }
+    case 'checkbox': {
+      const inp = h('input', { type: 'checkbox', checked: value === true }) as HTMLInputElement;
+      return { control: h('label', { class: 'chip' }, inp, h('span', {}, def.options?.on ?? '')), read: () => inp.checked };
     }
     case 'number': {
       const inp = h('input', { type: 'number', inputmode: 'decimal', step: def.step ?? 'any' }) as HTMLInputElement;

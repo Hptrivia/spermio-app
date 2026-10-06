@@ -68,14 +68,15 @@ export async function loadDemoData(): Promise<number> {
         date: addDays(-v * 3 - 1),
         startTime: '10:00',
         endTime: v === 0 ? '10:50' : '10:35',
-        location: v === 2 ? 'phone' : 'home',
+        location: v === 2 ? 'video' : 'home',
         seen: postpartum ? 'both' : 'mother',
         childId,
         phase: postpartum ? 'postpartum' : 'pregnancy',
         motherVitals: { bp: '118/76', pulse: 72, tempC: 36.8 },
         childVitals: postpartum ? { weightG: 3350 + v * 40, feeding: 'gestillt' } : undefined,
         notes: ['Demo-Besuch. Alles unauffällig.', 'Demo-Besuch. Fragen zur Ernährung besprochen.', 'Demo: telefonische Rückfrage.'][v],
-        billingCodes: postpartum ? (v === 2 ? ['S-TEL'] : ['S-WB', 'S-WK']) : v === 2 ? ['S-TEL'] : ['S-VS'],
+        billingCodes: postpartum ? [i === 0 ? '303' : '301'] : v === 0 ? ['102', '101'] : ['101'],
+        materials: !postpartum && v === 0 ? ['60200'] : [],
         travelKm: v === 2 ? 0 : 6 + i,
       });
     }
@@ -86,9 +87,9 @@ export async function loadDemoData(): Promise<number> {
         payer: insurer,
         from: addDays(-30),
         to: addDays(-1),
-        lines: [{ date: addDays(-7), code: 'S-WB', label: 'Wochenbettbesuch Mutter (Beispiel)', units: 7, amount: 42 }],
-        travelCost: 4.2,
-        total: 46.2,
+        lines: [{ date: addDays(-7), code: '30101', label: 'Hilfeleistung im frühen Wochenbett', units: 7, unitPrice: 6.19, amount: 43.33, payer: 'mother' }],
+        travelCost: 5.82,
+        total: 49.15,
         status: 'draft',
       });
     }

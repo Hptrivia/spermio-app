@@ -131,3 +131,8 @@ input[type='date'], input[type='time'] { min-height: 48px; -webkit-appearance: n
 .total { font-weight: 600; margin-top: 10px; }
 .danger-link { color: var(--danger) !important; display: block; margin: 12px auto 0; }
 .actions button { white-space: nowrap; padding-left: 10px; padding-right: 10px; }
+.position.muted { opacity: 0.55; }
+.preview { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; font-size: 0.92rem; }
+.preview-line { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.preview-line.total { font-weight: 600; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 6px; }
+.warn-text { color: var(--warn-text); }
